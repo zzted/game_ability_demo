@@ -34,8 +34,13 @@ struct FWidgetControllerParams
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TObjectPtr<UAttributeSet> AttributeSet = nullptr;
 };
+
 /**
- * 
+ * @class UAuraWidgetController
+ * @brief The UAuraWidgetController class serves as a base class for controlling widgets in the Aura system.
+ *
+ * This class provides functionality to manage widget behavior, broadcast initial values, and bind callbacks
+ * to relevant gameplay dependencies. It maintains references to important gameplay components that affect the widget.
  */
 UCLASS()
 class AURA_API UAuraWidgetController : public UObject

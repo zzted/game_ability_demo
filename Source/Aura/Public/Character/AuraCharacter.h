@@ -3,14 +3,16 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Character/AuraCharactorBase.h"
+#include "Character/AuraCharacterBase.h"
 #include "AuraCharacter.generated.h"
 
 /**
- * 
+ * @class AAuraCharacter
+ * @brief AAuraCharacter is a specific character class derived from AAuraCharactorBase.
+ * It adds functionality for initializing ability system information and handling player state replication.
  */
 UCLASS()
-class AURA_API AAuraCharacter : public AAuraCharactorBase
+class AURA_API AAuraCharacter : public AAuraCharacterBase
 {
 	GENERATED_BODY()
 
@@ -22,5 +24,5 @@ public:
 	virtual void OnRep_PlayerState() override;
 
 private:
-	void InitAbilityActorInfo();
+	virtual void InitAbilityActorInfo() override;
 };

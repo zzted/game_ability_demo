@@ -12,7 +12,11 @@ struct FWidgetControllerParams;
 class UOverlayWidgetController;
 class UAuraUserWidget;
 /**
- * 
+ * @class AAuraHUD
+ * @brief A custom Heads-Up Display (HUD) class for the Aura game, responsible for managing the overlay UI and its related components.
+ *
+ * Manages user interface elements, including the overlay widget and its associated widget controllers, to provide
+ * a seamless interface tied to the player's state, abilities, and attributes.
  */
 UCLASS()
 class AURA_API AAuraHUD : public AHUD

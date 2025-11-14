@@ -3,24 +3,32 @@
 
 #include "UI/WidgetController/OverlayWidgetController.h"
 
+#include "AuraGameplayTags.h"
 #include "AbilitySystem/AuraAbilitySystemComponent.h"
 #include "AbilitySystem/AuraAttributeSet.h"
+#include "AbilitySystem/Data/AbilityInfo.h"
+#include "AbilitySystem/Data/LevelUpInfo.h"
+#include "Player/AuraPlayerState.h"
 
 void UOverlayWidgetController::BroadcastInitialValues()
 {
-	const UAuraAttributeSet* AuraAttributeSet= CastChecked<UAuraAttributeSet>(AttributeSet);
 	
-	OnHealthChanged.Broadcast(AuraAttributeSet->GetHealth());
-	OnMaxHealthChanged.Broadcast(AuraAttributeSet->GetMaxHealth());
-	OnManaChanged.Broadcast(AuraAttributeSet->GetMana());
-	OnMaxManaChanged.Broadcast(AuraAttributeSet->GetMaxMana());
+	OnHealthChanged.Broadcast(GetAuraAS()->GetHealth());
+	OnMaxHealthChanged.Broadcast(GetAuraAS()->GetMaxHealth());
+	OnManaChanged.Broadcast(GetAuraAS()->GetMana());
+	OnMaxManaChanged.Broadcast(GetAuraAS()->GetMaxMana());
 }
 
 void UOverlayWidgetController::BindCallbacksToDependencies()
 {
-	Super::BindCallbacksToDependencies();
-	const UAuraAttributeSet* AuraAttributeSet= CastChecked<UAuraAttributeSet>(AttributeSet);
+	GetAuraPS()->OnXPChangedDelegate.AddUObject(this, &UOverlayWidgetController::OnXPChanged);
 
+	GetAuraPS()->OnLevelChangedDelegate.AddLambda(
+		[this](int32 NewLevel)
+		{
+			OnPlayerLevelChangedDelegate.Broadcast(NewLevel);
+		}
+	);
 	// AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
 	// 	AuraAttributeSet->GetHealthAttribute()).AddUObject(this, &UOverlayWidgetController::HealthChanged);
 	//
@@ -34,40 +42,96 @@ void UOverlayWidgetController::BindCallbacksToDependencies()
 	// 	AuraAttributeSet->GetMaxManaAttribute()).AddUObject(this, &UOverlayWidgetController::MaxManaChanged);
 
 	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
-		AuraAttributeSet->GetHealthAttribute()).AddLambda([this](const FOnAttributeChangeData& Data)
+		GetAuraAS()->GetHealthAttribute()).AddLambda([this](const FOnAttributeChangeData& Data)
 		{
 			OnHealthChanged.Broadcast(Data.NewValue);
 		});
 	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
-		AuraAttributeSet->GetMaxHealthAttribute()).AddLambda([this](const FOnAttributeChangeData& Data)
+		GetAuraAS()->GetMaxHealthAttribute()).AddLambda([this](const FOnAttributeChangeData& Data)
 		{
 			OnMaxHealthChanged.Broadcast(Data.NewValue);
 		});
 	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
-		AuraAttributeSet->GetManaAttribute()).AddLambda([this](const FOnAttributeChangeData& Data)
+		GetAuraAS()->GetManaAttribute()).AddLambda([this](const FOnAttributeChangeData& Data)
 		{
 			OnManaChanged.Broadcast(Data.NewValue);
 		});
 	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
-		AuraAttributeSet->GetMaxManaAttribute()).AddLambda([this](const FOnAttributeChangeData& Data)
+		GetAuraAS()->GetMaxManaAttribute()).AddLambda([this](const FOnAttributeChangeData& Data)
 		{
 			OnMaxManaChanged.Broadcast(Data.NewValue);
 		});
 
-	Cast<UAuraAbilitySystemComponent>(AbilitySystemComponent)->EffectAssetTags.AddLambda(
-		[this](const FGameplayTagContainer& AssetTags)
+	if (GetAuraASC())
+	{
+		if (GetAuraASC()->bStartupAbilitiesGiven)
 		{
-			for (const FGameplayTag& Tag : AssetTags)
+			BroadcastAbilityInfo();
+		}
+		else
+		{
+			GetAuraASC()->AbilitiesGivenDelegate.AddUObject(this, &UOverlayWidgetController::BroadcastAbilityInfo);
+		}
+		
+		GetAuraASC()->EffectAssetTags.AddLambda(
+			[this](const FGameplayTagContainer& AssetTags)
 			{
-				FGameplayTag MessageTag = FGameplayTag::RequestGameplayTag(TEXT("Message"));
-				if (Tag.MatchesTag(MessageTag))
+				for (const FGameplayTag& Tag : AssetTags)
 				{
-					const FUIWidgetRow* Row = GetDataTableRowByTag<FUIWidgetRow>(MessageWidgetDataTable, Tag);
-					MessageWidgetRowDelegate.Broadcast(*Row);
+					FGameplayTag MessageTag = FGameplayTag::RequestGameplayTag(TEXT("Message"));
+					if (Tag.MatchesTag(MessageTag))
+					{
+						const FUIWidgetRow* Row = GetDataTableRowByTag<FUIWidgetRow>(MessageWidgetDataTable, Tag);
+						MessageWidgetRowDelegate.Broadcast(*Row);
+					}
 				}
 			}
-		}
-	);
+		);
+
+		GetAuraASC()->AbilityEquippedDelegate.AddUObject(this, &UOverlayWidgetController::OnAbilityEquipped);
+	}
+
+	
+}
+
+void UOverlayWidgetController::OnXPChanged(const int32 NewXP)
+{
+	ULevelUpInfo* LevelUpInfo = GetAuraPS()->LevelUpInfo;
+	checkf(LevelUpInfo, TEXT("Unable to find LevelUpInfo. Please fill out AuraPlayerState Blueprint"));
+
+	const int32 Level = LevelUpInfo->FindLevelForXP(NewXP);
+
+	if (const int32 MaxLevel = LevelUpInfo->LevelUpInformation.Num(); Level <= MaxLevel && Level > 0)
+	{
+		const int32 LevelUpRequirement = LevelUpInfo->LevelUpInformation[Level].LevelUpRequirement;
+		const int32 PreviousLevelUpRequirement = LevelUpInfo->LevelUpInformation[Level - 1].LevelUpRequirement;
+
+		const int32 DeltaLevelRequirement = LevelUpRequirement - PreviousLevelUpRequirement;
+		const int32 XPForThisLevel = NewXP - PreviousLevelUpRequirement;
+
+		const float XPBarPercent = static_cast<float>(XPForThisLevel) / static_cast<float>(DeltaLevelRequirement);
+
+		OnXPPercentChangedDelegate.Broadcast(XPBarPercent);
+	}
+}
+
+void UOverlayWidgetController::OnAbilityEquipped(const FGameplayTag& AbilityTag, const FGameplayTag& StatusTag,
+	const FGameplayTag& NewSlotTag, const FGameplayTag& PrevSlotTag) const
+{
+	const FAuraGameplayTags GameplayTags = FAuraGameplayTags::Get();
+
+	FAuraAbilityInfo LastSlotInfo;
+	LastSlotInfo.StatusTag = FAuraGameplayTags::Get().Abilities_Status_Unlocked;
+	LastSlotInfo.InputTag = PrevSlotTag;
+	LastSlotInfo.CooldownTag = FGameplayTag::EmptyTag;
+	LastSlotInfo.AbilityTag = GameplayTags.Abilities_None;
+	// Broadcast empty info if PrevSlot is a valid slot. Only if equipping an already-equipped spell
+	AbilityInfoDelegate.Broadcast(LastSlotInfo);
+
+	FAuraAbilityInfo Info = AbilityInfo->FindAbilityInfoForTag(AbilityTag);
+	Info.StatusTag = StatusTag;
+	Info.InputTag = NewSlotTag;
+	AbilityInfoDelegate.Broadcast(Info);
 }
 
 // void UOverlayWidgetController::HealthChanged(const FOnAttributeChangeData& Data) const

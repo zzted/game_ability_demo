@@ -138,6 +138,11 @@ void AAuraCharacterBase::IncrementMinionCount_Implementation(const int32 Amount)
 	MinionCount += Amount;
 }
 
+ECharacterClass AAuraCharacterBase::GetCharacterClass_Implementation()
+{
+	return CharacterClass;
+}
+
 void AAuraCharacterBase::ApplyEffectToSelf(const TSubclassOf<UGameplayEffect>& EffectToApply, const float Level) const
 {
 	check(IsValid(GetAbilitySystemComponent()));
@@ -161,6 +166,7 @@ void AAuraCharacterBase::AddCharacterAbilities() const
 	if (!HasAuthority()) return;
 
 	AuraAbilitySystemComponent->AddCharacterAbilities(StartupAbilities);
+	AuraAbilitySystemComponent->AddCharacterPassiveAbilities(StartupPassiveAbilities);
 }
 
 void AAuraCharacterBase::Dissolve()

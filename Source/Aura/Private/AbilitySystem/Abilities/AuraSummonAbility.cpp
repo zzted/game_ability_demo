@@ -3,7 +3,7 @@
 
 #include "AbilitySystem/Abilities/AuraSummonAbility.h"
 
-TArray<FVector> UAuraSummonAbility::GetSpawnLocations()
+TArray<FVector> UAuraSummonAbility::GetSpawnLocations() const
 {
 	const FVector Forward = GetAvatarActorFromActorInfo()->GetActorForwardVector();
 	const FVector Location = GetAvatarActorFromActorInfo()->GetActorLocation();

@@ -9,14 +9,34 @@
 void UAuraDamageGameplayAbility::CauseDamage(AActor* TargetActor)
 {
 	FGameplayEffectSpecHandle DamageSpecHandle = MakeOutgoingGameplayEffectSpec(DamageEffectClass, 1);
-	for (TTuple<FGameplayTag, FScalableFloat> Pair : DamageTypes)
-	{
-		const FGameplayTag& GameplayTag = Pair.Key;
-		const FScalableFloat& DamageCurve = Pair.Value;
-		const float ScaledDamage = DamageCurve.GetValueAtLevel(GetAbilityLevel());
-		UAbilitySystemBlueprintLibrary::AssignTagSetByCallerMagnitude(DamageSpecHandle, GameplayTag, ScaledDamage);
-	}
+	// for (TTuple<FGameplayTag, FScalableFloat> Pair : DamageTypes)
+	// {
+	// 	const FGameplayTag& GameplayTag = Pair.Key;
+	// 	const FScalableFloat& DamageCurve = Pair.Value;
+	// 	const float ScaledDamage = DamageCurve.GetValueAtLevel(GetAbilityLevel());
+	// 	UAbilitySystemBlueprintLibrary::AssignTagSetByCallerMagnitude(DamageSpecHandle, GameplayTag, ScaledDamage);
+	// }
+
+	const float ScaledDamage = DamageAmount.GetValueAtLevel(GetAbilityLevel());
+	UAbilitySystemBlueprintLibrary::AssignTagSetByCallerMagnitude(DamageSpecHandle, DamageTypeTag, ScaledDamage);
 	GetAbilitySystemComponentFromActorInfo()->ApplyGameplayEffectSpecToTarget(*DamageSpecHandle.Data.Get(), UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(TargetActor));
+}
+
+FDamageEffectParams UAuraDamageGameplayAbility::MakeDamageEffectParamsFromClassDefaults(AActor* TargetActor) const
+{
+	FDamageEffectParams Params;
+	Params.WorldContextObject = GetAvatarActorFromActorInfo();
+	Params.DamageGameplayEffectClass = DamageEffectClass;
+	Params.SourceAbilitySystemComponent = GetAbilitySystemComponentFromActorInfo();
+	Params.TargetAbilitySystemComponent = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(TargetActor);
+	Params.BaseDamage = DamageAmount.GetValueAtLevel(GetAbilityLevel());
+	Params.AbilityLevel = GetAbilityLevel();
+	Params.DamageTypeTag = DamageTypeTag;
+	Params.DebuffChance = DebuffChance;
+	Params.DebuffDuration = DebuffDuration;
+	Params.DebuffDamage = DebuffDamage;
+	Params.DebuffFrequency = DebuffFrequency;
+	return Params;
 }
 
 FTaggedMontage UAuraDamageGameplayAbility::GetRandomTaggedMontageFromArray(const TArray<FTaggedMontage>& TaggedMontages) const
@@ -24,3 +44,9 @@ FTaggedMontage UAuraDamageGameplayAbility::GetRandomTaggedMontageFromArray(const
 	if (TaggedMontages.Num() == 0) return FTaggedMontage();
 	return TaggedMontages[FMath::RandRange(0, TaggedMontages.Num() - 1)];
 }
+
+// float UAuraDamageGameplayAbility::GetDamageByDamageType(float InLevel, const FGameplayTag& DamageType) const
+// {
+// 	checkf(DamageTypes.Contains(DamageType), TEXT("GameplayAbility [%s] does not have a DamageType [%s]"), *GetNameSafe(this), *DamageType.ToString());
+// 	return DamageTypes[DamageType].GetValueAtLevel(InLevel);
+// }

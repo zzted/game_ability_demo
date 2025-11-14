@@ -209,7 +209,7 @@ void AAuraPlayerController::SetupInputComponent()
 	AuraInputComponent->BindAbilityActions(InputConfig, this, &ThisClass::AbilityInputTagPressed, &ThisClass::AbilityInputTagReleased, &ThisClass::AbilityInputTagHeld);
 }
 
-void AAuraPlayerController::Move(const FInputActionValue& InputActionValue)
+void AAuraPlayerController::Move(const FInputActionValue& InputActionValue) 
 {
 	const FVector2D InputAxisVector = InputActionValue.Get<FVector2D>();
 	const FRotator Rotation = GetControlRotation();

@@ -93,14 +93,13 @@ void AAuraProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, 
 
 	if (HasAuthority())
 	{
-		// NOTE: DamageEffectSpecHandle should be valid only on the server (we set it there, but also don't replicate it).
-		check(DamageEffectSpecHandle.Data);
-		UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(OtherActor);
-		if (TargetASC)
+		// NOTE: DamageEffectSpecHandle should be valid only on the server (we set it there but also don't replicate it).
+		
+		if (UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(OtherActor))
 		{
-			TargetASC->ApplyGameplayEffectSpecToSelf(*DamageEffectSpecHandle.Data.Get());
+			DamageEffectParams.TargetAbilitySystemComponent = TargetASC;
+			UAuraAbilitySystemLibrary::ApplyDamageEffectsFromDamageEffectParams(DamageEffectParams);
 		}
- 
 		Destroy();
 	}
 	else

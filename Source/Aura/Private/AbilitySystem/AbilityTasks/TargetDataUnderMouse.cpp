@@ -38,7 +38,7 @@ void UTargetDataUnderMouse::Activate()
 	}
 }
 
-void UTargetDataUnderMouse::SendMouseCursorData()
+void UTargetDataUnderMouse::SendMouseCursorData() const
 {
 	FScopedPredictionWindow ScopedPrediction(AbilitySystemComponent.Get());
 	APlayerController* PlayerController = OwningAbility->GetCurrentActorInfo()->PlayerController.Get();
@@ -63,7 +63,7 @@ void UTargetDataUnderMouse::SendMouseCursorData()
 }
 
 void UTargetDataUnderMouse::OnTargetDateReplicatedCallback(const FGameplayAbilityTargetDataHandle& DataHandle,
-	FGameplayTag ActivationTag)
+	FGameplayTag ActivationTag) const
 {
 	AbilitySystemComponent->ConsumeClientReplicatedTargetData(GetAbilitySpecHandle(),GetActivationPredictionKey());
 	if (ShouldBroadcastAbilityTaskDelegates()) // check if ability is still active

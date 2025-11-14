@@ -73,6 +73,14 @@ void FAuraGameplayTags::InitializeNativeGameplayTags()
 		FString("Amount of Mana regenerated every 1 second."));
 
 	/*
+	 * Meta Attributes
+	 */
+
+	GameplayTags.Attributes_Meta_IncomingXP = UGameplayTagsManager::Get().AddNativeGameplayTag(
+		FName("Attributes.Meta.IncomingXP"),
+		FString("Amount of incoming XP"));
+
+	/*
 	 * Input Tags
 	 */
 	
@@ -100,7 +108,13 @@ void FAuraGameplayTags::InitializeNativeGameplayTags()
 		FName("InputTag.4"),
 		FString("4"));
 
-	
+	GameplayTags.InputTag_Passive_1 = UGameplayTagsManager::Get().AddNativeGameplayTag(
+		FName("InputTag.Passive.1"),
+		FString("Passive 1"));
+
+	GameplayTags.InputTag_Passive_2 = UGameplayTagsManager::Get().AddNativeGameplayTag(
+		FName("InputTag.Passive.2"),
+		FString("Passive 2"));
 	
 	/*
 	 * Damage Tags
@@ -121,7 +135,6 @@ void FAuraGameplayTags::InitializeNativeGameplayTags()
 	GameplayTags.Damage_Physical = UGameplayTagsManager::Get().AddNativeGameplayTag(
 		FName("Damage.Physical"),
 		FString("Physical Damage Type"));
-
 	
 	/*
 	 * Resistances
@@ -152,6 +165,53 @@ void FAuraGameplayTags::InitializeNativeGameplayTags()
 	GameplayTags.DamageTypesToResistances.Add(GameplayTags.Damage_Arcane, GameplayTags.Attributes_Resistance_Arcane);
 	GameplayTags.DamageTypesToResistances.Add(GameplayTags.Damage_Physical, GameplayTags.Attributes_Resistance_Physical);
 
+	/*
+	 * Debuffs
+	 */
+
+	GameplayTags.Debuff_Burn = UGameplayTagsManager::Get().AddNativeGameplayTag(
+		FName("Debuff.Burn"),
+		FString("Fire damage over time debuff"));
+
+	GameplayTags.Debuff_Stun = UGameplayTagsManager::Get().AddNativeGameplayTag(
+		FName("Debuff.Stun"),
+		FString("Lightning stun debuff, preventing movement and actions"));
+
+	GameplayTags.Debuff_Weak = UGameplayTagsManager::Get().AddNativeGameplayTag(
+		FName("Debuff.Weak"),
+		FString("Arcane weakness debuff, reducing damage dealt"));
+
+	GameplayTags.Debuff_Bleed = UGameplayTagsManager::Get().AddNativeGameplayTag(
+		FName("Debuff.Bleed"),
+		FString("Physical bleed debuff, causing damage over time"));
+
+	
+	GameplayTags.Debuff_Chance = UGameplayTagsManager::Get().AddNativeGameplayTag(
+		FName("Debuff.Chance"),
+		FString("Chance to apply debuff"));
+
+	GameplayTags.Debuff_Duration = UGameplayTagsManager::Get().AddNativeGameplayTag(
+		FName("Debuff.Duration"),
+		FString("Duration of debuff"));
+
+	GameplayTags.Debuff_Damage = UGameplayTagsManager::Get().AddNativeGameplayTag(
+		FName("Debuff.Damage"),
+		FString("Damage dealt by debuff"));
+
+	GameplayTags.Debuff_Frequency = UGameplayTagsManager::Get().AddNativeGameplayTag(
+		FName("Debuff.Frequency"),
+		FString("Frequency of debuff damage application"));
+
+
+	/*
+	 * Damage Types to Debuffs
+	 */
+
+	GameplayTags.DamageTypesToDebuffs.Add(GameplayTags.Damage_Fire, GameplayTags.Debuff_Burn);
+	GameplayTags.DamageTypesToDebuffs.Add(GameplayTags.Damage_Lightning, GameplayTags.Debuff_Stun);
+	GameplayTags.DamageTypesToDebuffs.Add(GameplayTags.Damage_Arcane, GameplayTags.Debuff_Weak);
+	GameplayTags.DamageTypesToDebuffs.Add(GameplayTags.Damage_Physical, GameplayTags.Debuff_Bleed);
+
 	GameplayTags.bInitialized = true;
 	
 	/*
@@ -164,6 +224,11 @@ void FAuraGameplayTags::InitializeNativeGameplayTags()
 	/*
 	 * Abilities
 	 */
+
+	GameplayTags.Abilities_None = UGameplayTagsManager::Get().AddNativeGameplayTag(
+	FName("Abilities.None"),
+	FString("Nullptr for no ability"));
+	
 	GameplayTags.Abilities_Attack = UGameplayTagsManager::Get().AddNativeGameplayTag(
 		FName("Abilities.Attack"),
 		FString("Attack"));
@@ -171,6 +236,60 @@ void FAuraGameplayTags::InitializeNativeGameplayTags()
 	GameplayTags.Abilities_Summon = UGameplayTagsManager::Get().AddNativeGameplayTag(
 		FName("Abilities.Summon"),
 		FString("Summon"));
+
+	GameplayTags.Abilities_Fire_FireBolt = UGameplayTagsManager::Get().AddNativeGameplayTag(
+		FName("Abilities.Fire.FireBolt"),
+		FString("FireBolt"));
+
+	GameplayTags.Abilities_Lightning_Electrocute = UGameplayTagsManager::Get().AddNativeGameplayTag(
+		FName("Abilities.Lightning.Electrocute"),
+		FString("Electrocute"));
+
+	GameplayTags.Abilities_HitReact = UGameplayTagsManager::Get().AddNativeGameplayTag(
+		FName("Abilities.HitReact"),
+		FString("Hit reaction ability"));
+
+	/*
+	 * Abilities Status
+	 */
+
+	GameplayTags.Abilities_Status_Locked = UGameplayTagsManager::Get().AddNativeGameplayTag(
+		FName("Abilities.Status.Locked"),
+		FString("Ability is locked"));
+
+	GameplayTags.Abilities_Status_Eligible = UGameplayTagsManager::Get().AddNativeGameplayTag(
+		FName("Abilities.Status.Eligible"),
+		FString("Ability is eligible to unlock"));
+
+	GameplayTags.Abilities_Status_Unlocked = UGameplayTagsManager::Get().AddNativeGameplayTag(
+		FName("Abilities.Status.Unlocked"),
+		FString("Ability is unlocked"));
+
+	GameplayTags.Abilities_Status_Equipped = UGameplayTagsManager::Get().AddNativeGameplayTag(
+		FName("Abilities.Status.Equipped"),
+		FString("Ability is equipped"));
+
+	/*
+	 * Abilities Type
+	 */
+	GameplayTags.Abilities_Type_Offensive = UGameplayTagsManager::Get().AddNativeGameplayTag(
+		FName("Abilities.Type.Offensive"),
+		FString("Offensive ability type"));
+
+	GameplayTags.Abilities_Type_Passive = UGameplayTagsManager::Get().AddNativeGameplayTag(
+		FName("Abilities.Type.Passive"),
+		FString("Passive ability type"));
+
+	GameplayTags.Abilities_Type_None = UGameplayTagsManager::Get().AddNativeGameplayTag(
+		FName("Abilities.Type.None"),
+		FString("No ability type"));
+	
+	/*
+	 * Cooldown
+	 */
+	GameplayTags.Cooldown_Fire_FireBolt = UGameplayTagsManager::Get().AddNativeGameplayTag(
+	FName("Cooldown.Fire.FireBolt"),
+	FString("FireBolt cooldown"));
 
 	/*
 	 * CombatSocket

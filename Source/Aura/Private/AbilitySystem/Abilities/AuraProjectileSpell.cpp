@@ -9,6 +9,7 @@
 #include "Actor/AuraProjectile.h"
 #include "Interaction/CombatInterface.h"
 
+
 void UAuraProjectileSpell::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
                                            const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo,
                                            const FGameplayEventData* TriggerEventData)
@@ -41,26 +42,6 @@ void UAuraProjectileSpell::SpawnProjectile(const FVector& ProjectileTargetLocati
 		GetAvatarActorFromActorInfo(), Cast<APawn>(GetOwningActorFromActorInfo()),
 		ESpawnActorCollisionHandlingMethod::AlwaysSpawn); // Using Avatar actor as owner to avoid effect handle being null on clinet
 
-	// TODO: Give the Projectile a Gameplay Effect Spec for causing Damage.
-
-	const UAbilitySystemComponent* SourceAbilitySystemComponent = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(GetAvatarActorFromActorInfo());
-	FGameplayEffectContextHandle EffectContextHandle = SourceAbilitySystemComponent->MakeEffectContext();
-	EffectContextHandle.AddSourceObject(Projectile);
-	EffectContextHandle.SetAbility(this);
-	const FGameplayEffectSpecHandle SpecHandle = SourceAbilitySystemComponent->MakeOutgoingSpec(DamageEffectClass, GetAbilityLevel(), EffectContextHandle);
-
-	const FAuraGameplayTags GameplayTags = FAuraGameplayTags::Get();
-
-	for (TPair<FGameplayTag, FScalableFloat>& Pair : DamageTypes)
-	{
-		const FGameplayTag& GameplayTag = Pair.Key;
-		const FScalableFloat& DamageCurve = Pair.Value;
-		const float ScaledDamage = DamageCurve.GetValueAtLevel(GetAbilityLevel());
-		UAbilitySystemBlueprintLibrary::AssignTagSetByCallerMagnitude(SpecHandle, GameplayTag, ScaledDamage);
-	}
-		
-		
-	Projectile->DamageEffectSpecHandle = SpecHandle;
-		
+	Projectile->DamageEffectParams = MakeDamageEffectParamsFromClassDefaults();
 	Projectile->FinishSpawning(SpawnTransform);
 }

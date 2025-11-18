@@ -36,6 +36,17 @@ FDamageEffectParams UAuraDamageGameplayAbility::MakeDamageEffectParamsFromClassD
 	Params.DebuffDuration = DebuffDuration;
 	Params.DebuffDamage = DebuffDamage;
 	Params.DebuffFrequency = DebuffFrequency;
+	Params.DeathImpulseMagnitude = DeathImpulseMagnitude;
+	Params.KnockbackForceMagnitude = KnockbackForceMagnitude;
+	Params.KnockbackChance = KnockbackChance;
+	if (IsValid(TargetActor)) // Setting default value for knockbacks for MeleeAttack etc. Firebolt has these values overridden in AuraProjectiles.cpp
+	{
+		FRotator Rotation = (TargetActor->GetActorLocation() - GetAvatarActorFromActorInfo()->GetActorLocation()).Rotation();
+		Rotation.Pitch = 45.f;
+		const FVector KnockbackDirection = Rotation.Vector();
+		Params.DeathImpulse = KnockbackDirection * DeathImpulseMagnitude;
+		Params.KnockbackForce = KnockbackDirection * KnockbackForceMagnitude;
+	}
 	return Params;
 }
 

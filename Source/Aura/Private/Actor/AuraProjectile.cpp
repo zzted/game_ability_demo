@@ -8,7 +8,6 @@
 #include "NiagaraFunctionLibrary.h"
 #include "AbilitySystem/AuraAbilitySystemLibrary.h"
 #include "Aura/Aura.h"
-#include "Components/AudioComponent.h"
 #include "Components/SphereComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
@@ -70,7 +69,7 @@ void AAuraProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, 
 
 	// If the Owner is invalid, destroy this projectile without causing damage or executing the VFX/SFX.
 	// This handles the case when Destroy() has already being called on the Owner (we currently set
-	// a brief lifespan on death for enemy characters), so it's invalid (i.e. either pending kill or null).
+	// a brief lifespan on death for enemy characters), so it's invalid (i.e., either pending kill or null).
 	// If we apply a damage GE while the source character (Owner) is invalid, it ends up triggering an exception in
 	// UExecCalc_Damage::Execute_Implementation() caused by ExecutionParams.GetSourceAbilitySystemComponent() being null.
 	// FIXME: Find a way to allow a projectile with an already destroyed Owner to do damage.
@@ -97,7 +96,22 @@ void AAuraProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, 
 		
 		if (UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(OtherActor))
 		{
+			const FVector DeathImpulse = GetActorForwardVector() * DamageEffectParams.DeathImpulseMagnitude;
+			DamageEffectParams.DeathImpulse = DeathImpulse;
 			DamageEffectParams.TargetAbilitySystemComponent = TargetASC;
+
+			const bool bIsKnockback = FMath::RandRange(0.f, 100.f) < DamageEffectParams.KnockbackChance;
+			if (bIsKnockback)
+			{
+				FRotator Rotation =  GetActorRotation();
+				Rotation.Pitch = 45.f;
+				
+				// const FVector KnockbackDirection = GetActorForwardVector().RotateAngleAxis(45.f, GetActorRightVector());
+				const FVector KnockbackDirection = Rotation.Vector();
+				const FVector KnockbackForce = KnockbackDirection * DamageEffectParams.KnockbackForceMagnitude;
+				DamageEffectParams.KnockbackForce = KnockbackForce;
+			}
+			
 			UAuraAbilitySystemLibrary::ApplyDamageEffectsFromDamageEffectParams(DamageEffectParams);
 		}
 		Destroy();

@@ -393,6 +393,68 @@ void UAuraAbilitySystemLibrary::GetLivePlayersWithinRadius(const UObject* WorldC
 	}
 }
 
+void UAuraAbilitySystemLibrary::GetClosestTargets(
+	const int32 MaxTargets,
+	const TArray<AActor*>& InTargets,
+	TArray<AActor*>& OutClosestTargets,
+	const FVector& Origin)
+{
+	OutClosestTargets.Reset();
+	if (InTargets.Num() <= MaxTargets)
+	{
+		OutClosestTargets = InTargets;
+		return;
+	}
+
+	struct FCompare
+	{
+		const FVector* OriginPtr;
+
+		explicit FCompare(const FVector* InOriginPtr)
+			: OriginPtr(InOriginPtr)
+		{}
+
+		bool operator()(const AActor* A, const AActor* B) const
+		{
+			// Farthest actor gets higher priority in the heap
+			const float DistA = FVector::DistSquared(*OriginPtr, A->GetActorLocation());
+			const float DistB = FVector::DistSquared(*OriginPtr, B->GetActorLocation());
+			return DistA < DistB; 
+		}
+	};
+
+	std::priority_queue<AActor*, std::vector<AActor*>, FCompare> MaxHeap((FCompare(&Origin)));
+
+	for (AActor* Target : InTargets)
+	{
+		if (!IsValid(Target)) continue;
+
+		if (MaxHeap.size() < MaxTargets)
+		{
+			MaxHeap.push(Target);
+		}
+		else
+		{
+			const AActor* Farthest = MaxHeap.top();
+
+			const float DistNew   = FVector::DistSquared(Origin, Target->GetActorLocation());
+			const float DistFar   = FVector::DistSquared(Origin, Farthest->GetActorLocation());
+
+			if (DistNew < DistFar)
+			{
+				MaxHeap.pop();
+				MaxHeap.push(Target);
+			}
+		}
+	}
+
+	while (!MaxHeap.empty())
+	{
+		OutClosestTargets.Add(MaxHeap.top());
+		MaxHeap.pop();
+	}
+}
+
 bool UAuraAbilitySystemLibrary::IsNotFriend(const AActor* FirstActor, const AActor* SecondActor)
 {
 	const bool bBothArePlayers = FirstActor->ActorHasTag(FName("Player")) && SecondActor->ActorHasTag(FName("Player"));

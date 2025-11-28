@@ -90,3 +90,12 @@ void UAuraBeamSpell::StoreAdditionalTargets(TArray<AActor*>& OutAdditionalTarget
 	}
 }
 
+void UAuraBeamSpell::RemoveTargetFromOnDeathDelegate(AActor* TargetActor)
+{
+	if (ICombatInterface* CombatInterface = Cast<ICombatInterface>(TargetActor))
+	{
+		CombatInterface->GetOnDeathDelegate().RemoveDynamic(this, &UAuraBeamSpell::PrimaryTargetDied);
+		CombatInterface->GetOnDeathDelegate().RemoveDynamic(this, &UAuraBeamSpell::AdditionalTargetDied);
+	}
+}
+

@@ -38,6 +38,8 @@ public:
 	virtual void AddToSpellPoints_Implementation(int32 InSpellPoints) override;
 	virtual int32 GetAttributePoints_Implementation() const override;
 	virtual int32 GetSpellPoints_Implementation() const override;
+	virtual void ShowMagicCircle_Implementation(UMaterialInterface* DecalMaterial = nullptr) override;
+	virtual void HideMagicCircle_Implementation() override;
 	/* end Player Interface*/
 
 	/* Combat Interface*/
@@ -46,6 +48,16 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	TObjectPtr<UNiagaraComponent> LevelUpNiagaraComponent;
+
+	virtual void OnRep_Stunned() override;
+	virtual void OnRep_Burned() override;
+
+	FTimerHandle InitASCRetryTimerHandle;
+	int32 InitASCRetryCount = 0;
+	static constexpr int32 MaxInitASCRetryCount = 5;
+
+	// 尝试初始化（供重试回调使用）
+	void RetryInitAbilityActorInfo();
 
 private:
 

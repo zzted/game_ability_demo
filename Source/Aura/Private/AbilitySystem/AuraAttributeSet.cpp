@@ -179,10 +179,12 @@ void UAuraAttributeSet::HandleIncomingDamage(const FEffectProperties& Props)
 		}
 		else if (!UAuraAbilitySystemLibrary::GetDamageType(Props.EffectContextHandle).MatchesTag(FGameplayTag::RequestGameplayTag(FName(TEXT("Debuff"))))) // try to avoid debuff damage adding HitReact, TBD
 		{
-			FGameplayTagContainer TagContainer;
-			TagContainer.AddTag(FAuraGameplayTags::Get().Effects_HitReact);
-			Props.TargetAbilitySystemComponent->TryActivateAbilitiesByTag(TagContainer);
-
+			if (Props.TargetCharacter->Implements<UCombatInterface>() && !ICombatInterface::Execute_IsBeingShocked(Props.TargetCharacter))
+			{
+				FGameplayTagContainer TagContainer;
+				TagContainer.AddTag(FAuraGameplayTags::Get().Effects_HitReact);
+				Props.TargetAbilitySystemComponent->TryActivateAbilitiesByTag(TagContainer);
+			}
 			const FVector& KnockbackForce = UAuraAbilitySystemLibrary::GetKnockbackForce(Props.EffectContextHandle);
 			if (!KnockbackForce.IsNearlyZero(1.f))
 			{
@@ -204,6 +206,7 @@ void UAuraAttributeSet::HandleIncomingDamage(const FEffectProperties& Props)
 
 void UAuraAttributeSet::Debuff(const FEffectProperties& Props)
 {
+	// Debuff is assigned within meta-attribute which is not replicated, so the client will not have the tags associated. need to handle that with on rep for debuff bools
 	const FAuraGameplayTags GameplayTags = FAuraGameplayTags::Get();
 	FGameplayEffectContextHandle EffectContext = Props.SourceAbilitySystemComponent->MakeEffectContext();
 	EffectContext.AddSourceObject(Props.SourceAvatarActor);
@@ -221,6 +224,13 @@ void UAuraAttributeSet::Debuff(const FEffectProperties& Props)
 
 	FInheritedTagContainer TagContainer = FInheritedTagContainer();
 	TagContainer.Added.AddTag(DamageType);
+	if (DamageType.MatchesTagExact(GameplayTags.Debuff_Stun))
+	{
+		TagContainer.Added.AddTag(GameplayTags.Player_Block_CursorTrace);
+		TagContainer.Added.AddTag(GameplayTags.Player_Block_InputHeld);
+		TagContainer.Added.AddTag(GameplayTags.Player_Block_InputPressed);
+		TagContainer.Added.AddTag(GameplayTags.Player_Block_InputReleased);
+	}
 	UTargetTagsGameplayEffectComponent& TagsGameplayEffectComponent = Effect->AddComponent<UTargetTagsGameplayEffectComponent>();
 	TagsGameplayEffectComponent.SetAndApplyTargetTagChanges(TagContainer);
 
@@ -265,12 +275,18 @@ void UAuraAttributeSet::HandleIncomingXP(const FEffectProperties& Props)
 
 		if (NumLevelUps > 0)
 		{
-			const int32 AttributePointsReward = IPlayerInterface::Execute_GetAttributePointsReward(Props.SourceCharacter, CurrentLevel);
-			const int32 SpellPointsReward = IPlayerInterface::Execute_GetSpellPointsReward(Props.SourceCharacter, CurrentLevel);
+			int32 AttributePointsReward = 0;
+			int32 SpellPointsReward = 0;
+
+			for (int32 i = 0; i < NumLevelUps; i++)
+			{
+				SpellPointsReward += IPlayerInterface::Execute_GetSpellPointsReward(Props.SourceCharacter, CurrentLevel + i);
+				AttributePointsReward += IPlayerInterface::Execute_GetAttributePointsReward(Props.SourceCharacter, CurrentLevel + i);
+			}
 
 			IPlayerInterface::Execute_AddToPlayerLevel(Props.SourceCharacter, NumLevelUps);
-			IPlayerInterface::Execute_AddToAttributePoints(Props.SourceCharacter, AttributePointsReward * NumLevelUps);
-			IPlayerInterface::Execute_AddToSpellPoints(Props.SourceCharacter, SpellPointsReward * NumLevelUps);
+			IPlayerInterface::Execute_AddToAttributePoints(Props.SourceCharacter, AttributePointsReward);
+			IPlayerInterface::Execute_AddToSpellPoints(Props.SourceCharacter, SpellPointsReward);
 
 			// SetHealth(GetMaxHealth());
 			// SetMana(GetMaxMana());

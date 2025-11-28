@@ -12,6 +12,7 @@
 #include "Aura/AuraLogChannels.h"
 #include "HLSLTree/HLSLTreeTypes.h"
 #include "Interaction/CombatInterface.h"
+#include "Kismet/GameplayStatics.h"
 
 struct AuraDamageStatics
 {
@@ -152,7 +153,40 @@ void UExecCalc_Damage::Execute_Implementation(const FGameplayEffectCustomExecuti
 		const FGameplayTag& DamageTypeTag = Pair.Key;
 		const FGameplayTag& ResistanceTag = Pair.Value;
 		const FGameplayEffectAttributeCaptureDefinition& Def = DamageStatics().TagsToCaptureDefs.FindRef(ResistanceTag);
-		const float DamageTypeValue = Spec.GetSetByCallerMagnitude(DamageTypeTag, false);
+		float DamageTypeValue = Spec.GetSetByCallerMagnitude(DamageTypeTag, false);
+		if (DamageTypeValue <= 0.f) continue;;
+
+		if (UAuraAbilitySystemLibrary::IsRadialDamage(ContextHandle))
+		{
+			// 1. override TakeDamage in AuraCharacterBase
+			// 2. create delegate OnDamageDelegate, broadcast damage received in TakeDamage
+			// 3. bind lambda to OnDamageDelegate on the Victim here
+			// 4. Call UGameplayStatics::ApplyRadialDamageWithFalloff to cause damage (this will result in TakeDamage being called on the Victim which will then broadcast OnDamageDelegate
+			// 5. in lambda set DamageTypeValue to the damage received from the broadcast
+			if (ICombatInterface* CombatInterface = Cast<ICombatInterface>(TargetAvatar))
+			{
+				CombatInterface->GetOnDamageSignature().AddLambda([&](float DamageAmount)
+				{
+					DamageTypeValue = DamageAmount;
+				});
+			}
+
+			FVector DamageOrigin = UAuraAbilitySystemLibrary::GetRadialDamageOrigin(ContextHandle);
+			DamageOrigin.Z += 200.f;
+			UGameplayStatics::ApplyRadialDamageWithFalloff(
+				TargetAvatar,
+				DamageTypeValue,
+				0.f,
+				DamageOrigin,
+				UAuraAbilitySystemLibrary::GetRadialDamageInnerRadius(ContextHandle),
+				UAuraAbilitySystemLibrary::GetRadialDamageOuterRadius(ContextHandle),
+				1.f,
+				UDamageType::StaticClass(),
+				TArray<AActor*>(),
+				SourceAvatar,
+				nullptr); // Need to change the object type to world dynamic for the function to work
+		}
+		
 		float Resistance = 0.f;
 		ExecutionParams.AttemptCalculateCapturedAttributeMagnitude(Def, EvaluationParameters, Resistance);
 		Resistance = FMath::Max<float>(Resistance, 0.0f);

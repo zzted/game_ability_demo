@@ -18,6 +18,7 @@ AAuraProjectile::AAuraProjectile()
 	PrimaryActorTick.bCanEverTick = false;
 	bReplicates = true;
 	
+	
 	Sphere = CreateDefaultSubobject<USphereComponent>("Sphere");
 	SetRootComponent(Sphere);
 	Sphere->SetCollisionObjectType(ECC_Projectile);
@@ -37,10 +38,12 @@ void AAuraProjectile::BeginPlay()
 {
 	Super::BeginPlay();
 	SetLifeSpan(LifeSpan);
+	SetReplicateMovement(true);
 	Sphere->OnComponentBeginOverlap.AddDynamic(this, &AAuraProjectile::OnSphereOverlap);
 	LoopingSoundComponent = UGameplayStatics::SpawnSoundAttached(LoopingSound, GetRootComponent(), NAME_None,
 		FVector::Zero(), FRotator::ZeroRotator,
-		EAttachLocation::KeepRelativeOffset, true); // Don't need to stop looping sound when we marked this as true
+		EAttachLocation::KeepRelativeOffset,
+		true); // Don't need to stop looping sound when we marked this as true
 }
 
 void AAuraProjectile::Destroyed()

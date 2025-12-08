@@ -40,6 +40,7 @@ public:
 	virtual int32 GetSpellPoints_Implementation() const override;
 	virtual void ShowMagicCircle_Implementation(UMaterialInterface* DecalMaterial = nullptr) override;
 	virtual void HideMagicCircle_Implementation() override;
+	virtual void SaveProgress_Implementation(const FName& CheckpointTag) override;
 	/* end Player Interface*/
 
 	/* Combat Interface*/
@@ -58,6 +59,8 @@ public:
 
 	// 尝试初始化（供重试回调使用）
 	void RetryInitAbilityActorInfo();
+
+	void LoadProgress();
 
 private:
 

@@ -12,6 +12,7 @@ class UAttributeSet;
 class UAbilitySystemComponent;
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnPlayerStatChangedSignature, int32);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnPlayerLevelChangedSignature, int32 /*LevelValue*/, bool /*bLevelUp*/)
 /**
  * 
  */
@@ -38,7 +39,7 @@ public:
 	FORCEINLINE int32 GetSpellPoints() const { return SpellPoints; }
 
 	FOnPlayerStatChangedSignature OnXPChangedDelegate;
-	FOnPlayerStatChangedSignature OnLevelChangedDelegate;
+	FOnPlayerLevelChangedSignature OnLevelChangedDelegate;
 	FOnPlayerStatChangedSignature OnAttributePointsChangedDelegate;
 	FOnPlayerStatChangedSignature OnSpellPointsChangedDelegate;
 

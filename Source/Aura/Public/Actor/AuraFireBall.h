@@ -15,6 +15,16 @@ class AURA_API AAuraFireBall : public AAuraProjectile
 	GENERATED_BODY()
 
 public:
+	UFUNCTION(BlueprintImplementableEvent)
+	void StartOutgoingTimeline();
+
+	virtual void ExecuteImpactFXs() override;
+
+	UPROPERTY(BlueprintReadOnly)
+	TObjectPtr<AActor> ReturnToActor;
+
+	UPROPERTY(BlueprintReadWrite)
+	FDamageEffectParams ExplosionDamageEffectParams;
 
 protected:
 	virtual void BeginPlay() override;

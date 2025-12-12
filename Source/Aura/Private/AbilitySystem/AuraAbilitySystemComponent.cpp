@@ -40,16 +40,40 @@ void UAuraAbilitySystemComponent::AddCharacterPassiveAbilities(
 	for (const TSubclassOf<UGameplayAbility> AbilityClass : StartupPassiveAbilities)
 	{
 		FGameplayAbilitySpec AbilitySpec = FGameplayAbilitySpec(AbilityClass, 1);
+		AbilitySpec.DynamicAbilityTags.AddTag(FAuraGameplayTags::Get().Abilities_Status_Equipped);
 		GiveAbilityAndActivateOnce(AbilitySpec);
 	}
 }
 
 void UAuraAbilitySystemComponent::AddCharacterAbilitiesFromSaveData(ULoadScreenSaveGame* SaveData)
 {
+	FAuraGameplayTags GameplayTags = FAuraGameplayTags::Get();
 	for (const FSavedAbility& Data : SaveData->SavedAbilities)
 	{
-		const TSubclassOf<UGameplayAbility> StartupAbilityClass = Data.GameplayAbility;
+		const TSubclassOf<UGameplayAbility> LoadedAbilityClass = Data.GameplayAbility;
+
+		FGameplayAbilitySpec LoadedAbilitySpec = FGameplayAbilitySpec(LoadedAbilityClass, Data.AbilityLevel);
+
+		LoadedAbilitySpec.DynamicAbilityTags.AddTag(Data.AbilitySlot);
+		LoadedAbilitySpec.DynamicAbilityTags.AddTag(Data.AbilityStatus);
+		if (Data.AbilityType == GameplayTags.Abilities_Type_Offensive)
+		{
+			GiveAbility(LoadedAbilitySpec);
+		}
+		else if (Data.AbilityType == GameplayTags.Abilities_Type_Passive)
+		{
+			if (Data.AbilityStatus.MatchesTagExact(GameplayTags.Abilities_Status_Equipped))
+			{
+				GiveAbilityAndActivateOnce(LoadedAbilitySpec);
+			}
+			else
+			{
+				GiveAbility(LoadedAbilitySpec);
+			}
+		}
 	}
+	bStartupAbilitiesGiven = true;
+	AbilitiesGivenDelegate.Broadcast(); // only broadcast on server, overriding OnRep_ActivateAbilities to broadcast on client as well 
 }
 
 void UAuraAbilitySystemComponent::AbilityInputTagHeld(const FGameplayTag& InputTag)
@@ -244,8 +268,8 @@ void UAuraAbilitySystemComponent::AssignSlotToAbility(FGameplayAbilitySpec* Abil
 
 void UAuraAbilitySystemComponent::MulticastActivatePassiveEffect_Implementation(const FGameplayTag& AbilityTag, bool bActivate)
 {
-	UE_LOG(LogTemp, Warning, TEXT("MulticastActivatePassiveEffect received on %s Role=%d NetMode=%d, AbilityTag=%s, Activate=%d"),
-		*GetNameSafe(GetOwner()), (int)GetOwnerRole(), (int)GetNetMode(), *AbilityTag.ToString(), bActivate);
+	// UE_LOG(LogTemp, Warning, TEXT("MulticastActivatePassiveEffect received on %s Role=%d NetMode=%d, AbilityTag=%s, Activate=%d"),
+	// 	*GetNameSafe(GetOwner()), (int)GetOwnerRole(), (int)GetNetMode(), *AbilityTag.ToString(), bActivate);
 	ActivatePassiveEffect.Broadcast(AbilityTag, bActivate);
 }
 
@@ -360,9 +384,11 @@ void UAuraAbilitySystemComponent::ServerEquipAbility_Implementation(const FGamep
 				if (IsPassiveAbility(*AbilitySpec))
 				{
 					TryActivateAbility(AbilitySpec->Handle);
-					UE_LOG(LogTemp, Warning, TEXT("[Server] ServerEquipAbility called on %s, HasAuthority=%d"), *GetNameSafe(GetOwner()), GetOwner()->HasAuthority());
+					// UE_LOG(LogTemp, Warning, TEXT("[Server] ServerEquipAbility called on %s, HasAuthority=%d"), *GetNameSafe(GetOwner()), GetOwner()->HasAuthority());
 					MulticastActivatePassiveEffect(AbilityTag, true); // Activate the ability effects
 				}
+				AbilitySpec->DynamicAbilityTags.RemoveTag(GetStatusTagFromSpec(*AbilitySpec));
+				AbilitySpec->DynamicAbilityTags.AddTag(GameplayTags.Abilities_Status_Equipped);
 			}
 
 			AssignSlotToAbility(AbilitySpec, NewSlotTag);

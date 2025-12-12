@@ -64,6 +64,8 @@ public:
 
 	virtual void StunTagChanged(const FGameplayTag CallbackTag, int32 NewCount);
 
+	void SetCharacterClass(const ECharacterClass InClass) { CharacterClass = InClass; };
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -84,6 +86,7 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Combat")
 	FName TailSocketName;
 
+	UPROPERTY(BlueprintReadOnly)
 	bool bIsDead = false;
 
 	UPROPERTY(ReplicatedUsing=OnRep_Stunned, BlueprintReadOnly)

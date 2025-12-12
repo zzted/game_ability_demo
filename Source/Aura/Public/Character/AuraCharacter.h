@@ -45,7 +45,13 @@ public:
 
 	/* Combat Interface*/
 	virtual int32 GetPlayerLevel_Implementation() override;
+	virtual void Die(const FVector& DeathImpulse) override;
 	/* end Combat Interface*/
+
+	UPROPERTY(EditDefaultsOnly)
+	float DeathTime = 5.f;
+
+	FTimerHandle DeathTimerHandle;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	TObjectPtr<UNiagaraComponent> LevelUpNiagaraComponent;
@@ -60,7 +66,7 @@ public:
 	// 尝试初始化（供重试回调使用）
 	void RetryInitAbilityActorInfo();
 
-	void LoadProgress();
+	void LoadProgress() const;
 
 private:
 
